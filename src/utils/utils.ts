@@ -133,3 +133,13 @@ export function createElement<
     }
     return element;
 }
+
+export function setElementProperty<T extends HTMLElement, K extends keyof T>(element: T | null, property: K, value: T[K]) {
+    if (!element) return;
+    element[property] = value;
+}
+
+export function isEmptyValidation(inputElement: HTMLInputElement): boolean {
+    if (inputElement.value) return false
+    return true;
+}

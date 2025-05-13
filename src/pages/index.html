@@ -39,7 +39,7 @@
 		</div>
 	</div>
 
-	<div class="modal modal_active">
+	<!-- <div class="modal">
 		<div class="modal__container">
 			<button class="modal__close" aria-label="закрыть"></button>
 			<div class="modal__content">
@@ -154,7 +154,7 @@
 				</div>
 			</div>
 		</div>
-	</div>
+	</div> -->
 
 	<template id="success">
 		<div class="order-success">
@@ -235,11 +235,11 @@
 			<div class="order">
 				<label class="order__field">
 					<span class="form__label modal__title">Email</span>
-					<input name="email" class="form__input" type="text" placeholder="Введите Email" />
+					<input name="email" class="form__input" type="email" placeholder="Введите Email" />
 				</label>
 				<label class="order__field">
 					<span class="form__label modal__title">Телефон</span>
-					<input name="phone" class="form__input" type="text" placeholder="+7 (" />
+					<input name="phone" class="form__input" type="text" placeholder="+7 (" minlength="11" maxlength="11"/>
 				</label>
 			</div>
 			<div class="modal__actions">
