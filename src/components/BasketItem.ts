@@ -4,21 +4,19 @@ import { IEvents } from "./base/events";
 import { setElementProperty } from "../utils/utils";
 
 interface IBasketItemData extends Partial<ICard> {
-    index: number;
 	amount: number;
+	index: number;
 }
 
 export class BasketItem extends Component <IBasketItemData> {
-	protected itemIndex: HTMLSpanElement;
-	protected itemTitle: HTMLSpanElement;
-	protected itemPrice: HTMLSpanElement;
-	protected deleteItemButton: HTMLButtonElement;
-	protected itemData: Partial<ICard>;
-
-	private _id: string;
+	private itemIndex: HTMLSpanElement;
+	private itemTitle: HTMLSpanElement;
+	private itemPrice: HTMLSpanElement;
+	private deleteItemButton: HTMLButtonElement;
+	private events: IEvents;
+	
 	private _amount: number;
-	private _price: number;
-	protected events: IEvents;
+	private _id: string;
 
 	constructor(container: HTMLElement, events: IEvents) {
 		super(container);
@@ -30,15 +28,13 @@ export class BasketItem extends Component <IBasketItemData> {
 		this.deleteItemButton = container.querySelector('.basket__item-delete');
 
 		this.deleteItemButton.addEventListener('click', () => {
-			this.events.emit('product:deleteFromBasket', {data: this._id})
+			this.events.emit('product:deleteFromBasket', {data: this.id})
 		})
 	}
 
 	render(itemData: IBasketItemData): HTMLElement {
 		if(!itemData) return this.container;
 
-		setElementProperty(this.itemIndex, 'textContent', `${itemData.index}`)
-		this._amount = itemData.amount || 1;
         Object.assign(this, itemData);
         return super.render(itemData);
 	}
@@ -47,14 +43,30 @@ export class BasketItem extends Component <IBasketItemData> {
 		setElementProperty(this.itemTitle, 'textContent', value);
 	}
 
+	set amount(value: number) {
+		this._amount = value;
+	}
+
+	get amount() {
+		return this._amount
+	}
+
 	set price(value: number) {
-		this._price = value * this._amount
-        setElementProperty(this.itemPrice, 'textContent', this._price ? `${this._price} синапсов` : "Бесценно");
+        setElementProperty(this.itemPrice, 'textContent', value ? `${value * this._amount} синапсов` : "Бесценно");
+	}
+
+	set index(value: number) {
+		setElementProperty(this.itemIndex, 'textContent', `${value}`)
 	}
 
 	set id(value: string) {
 		this._id = value;
 	}
+
+	get id() {
+		return this._id;
+	}
+
 
 	getElement(): HTMLElement {
 		return this.container;

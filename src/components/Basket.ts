@@ -28,8 +28,9 @@ export class Basket extends BasketModel {
         });
     }
 
-    clear(): void {
+    public clear(): void {
         setElementProperty(this.itemsInBasketAmount, 'textContent', `0`);
-        this.items.clear();
+        ;
+        this.currentAmount = 0;
     }
 }

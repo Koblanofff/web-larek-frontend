@@ -14,19 +14,12 @@ export interface ICardsData {
     preview: string | null;
 }
 
-export interface IModal {
-    modalTitle: HTMLElement;
-    modalDescription: HTMLElement;
-    modalImage: HTMLImageElement;
-    modalCategory: HTMLElement;
-    modalPrice: HTMLElement;
-}
-
 export interface IBasketModel {
     items: Map<string, number>;
     add(id: string): void;
     remove(id: string): void;
 }
+export type Validator = (value: string) => boolean;
 
 export interface IApi {
     baseUrl: string;
@@ -43,14 +36,20 @@ export interface ICardItem extends ICard {
     amount: number;
 }
 
+export type PaymentMethod = 'card' | 'cash' | undefined;
+
 export interface IOrderDetails {
-    paymentMethod: 'card' | 'cash';
+    paymentMethod: PaymentMethod;
     address: string;
-    items: ICardItem[];
 }
 
 export interface ICustomerData {
-    order: IOrderDetails;
     email: string;
     phone: string;
+}
+
+export class Order {
+    items: Map<string, number>;
+    orderDetails: IOrderDetails;
+    customerData: ICustomerData;
 }

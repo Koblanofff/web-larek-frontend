@@ -1,10 +1,8 @@
-import { BasketItem } from './../BasketItem';
-import { Modal } from "../common/Modal";
-import { IBasketModel } from "../../types";
+import { IBasketModel, ICard, ICardItem } from "../../types";
 import { IEvents } from "../base/events";
-import { cloneTemplate, setElementProperty } from '../../utils/utils';
-import { AppApi } from '../AppApi';
-import { ICardItem } from '../../types';
+import { Modal } from "../common/Modal";
+import { BasketItem } from "../BasketItem";
+import { cloneTemplate, setElementProperty } from "../../utils/utils";
 
 const basketItemTemplate: HTMLTemplateElement = document.querySelector('#card-basket');
 
@@ -12,11 +10,10 @@ export class BasketModal extends Modal<IBasketModel> {
     protected events: IEvents;
     protected basketList: HTMLUListElement;
     protected basketTotalPriceElement: HTMLSpanElement;
-    protected basketTotalPriceValue: number;	
-    private renderedItemsId: string[] = [];
 	protected makeOrderButton: HTMLButtonElement;
-    protected itemsInBasket: ICardItem[];
-    private itemsDataCache: Map<string, ICardItem> = new Map();
+    protected lastItemIndex: number;
+    protected _items = new Map<string, number>();
+    private itemsInCache = new Map<string, ICardItem>();
 
     constructor(protected container: HTMLElement, events: IEvents) {
         super(container, events);
@@ -25,61 +22,150 @@ export class BasketModal extends Modal<IBasketModel> {
         this.basketList = container.querySelector('.basket__list');
         this.basketTotalPriceElement = container.querySelector('.basket__price');
 		this.makeOrderButton = container.querySelector('.basket__button');
-        this.basketTotalPriceValue = 0;
+
+        this.lastItemIndex = 0;
 
         this.makeOrderButton.addEventListener('click', () => {
-            const items = Array.from(this.itemsDataCache.values())
-                .filter(item => this.renderedItemsId.includes(item.id))
-                .map(item => ({
-                    ...item,
-                    amount: item.amount
-                }));
-            this.events.emit('order:goToDetails', items);
-        });
+            this.events.emit('order:add:products', this.items);
+            this.events.emit('orderDetailsModal:opened');
+        })
+
+        this.events.on('basketModal:opened',this.handleBasketModalOpened);
+
+        this.events.on('modal:closed', this.destroy)
     }
 
-    updateBasket(items: Map<string, number>, api: AppApi) {
-        const _items = Array.from(items);
-		if (!_items.length) {
-			setElementProperty(this.basketTotalPriceElement, 'textContent', '0 синапсов');
-			this.makeOrderButton.disabled = true;
-		} else this.makeOrderButton.disabled = false;
+    private handleBasketModalOpened = () => {
+        this.renderBasketModal();
+        this.events.on('basket:changed', this.handleBasketChanged);
+    }
 
-        let currentIndex = 1;
-		this.basketTotalPriceValue = 0;
+    private handleBasketChanged = async () => {
+        await this.renderBasketModal();
+    };
 
-        this.renderedItemsId = this.renderedItemsId.filter(id => items.has(id));
-        this.basketList.innerHTML = '';
+    private destroy = () => {
+        this.events.off('basket:changed', this.handleBasketChanged);
+    }
 
-        _items.forEach(([id, amount]) => {
-            if (this.itemsDataCache.has(id)) {
-                const productData = this.itemsDataCache.get(id);
-                this.createBasketItem({ ...productData, amount }, currentIndex, amount);
-                currentIndex ++;
-            } else {
-                api.getProductData(id).then(productData => {
-                    this.itemsDataCache.set(id, { ...productData, amount });
-                    this.createBasketItem({ ...productData, amount }, currentIndex, amount);
-                    currentIndex ++;
-                });
+    private renderBasketModal = async () => {
+        await this.renderBasketItems();
+        this.setTotalPrice();
+        this.handleMakeOrderButtonState();
+    }
+
+    private renderBasketItems = async () => {
+        this.clearBasketContent();
+        this.lastItemIndex = 0;
+
+        try {
+            await this.getProductsData();
+        } catch (err) {
+            console.log(`Ошибка при рендере карточек. ${err}`);
+            return;
+        }
+
+        this.itemsInCache.forEach((value, key) => {
+            const basketItem = new BasketItem(cloneTemplate(basketItemTemplate), this.events);
+            this.lastItemIndex ++;
+            basketItem.render({
+                ...value,
+                index: this.lastItemIndex
+            });
+            basketItem.getElement().dataset.itemId = key;
+            this.basketList.appendChild(basketItem.getElement());
+
+            if (!basketItem.amount) {
+                this.removeBasketItem(key)
             }
         });
     }
 
-    private createBasketItem(productData: ICardItem, index: number, amount: number) {
-        this.itemsDataCache.set(productData.id, { ...productData, amount });
-        const basketItem = new BasketItem(cloneTemplate(basketItemTemplate), this.events);
-        basketItem.render({ ...productData, index, amount });
-        this.basketList.appendChild(basketItem.getElement());
-        this.renderedItemsId.push(productData.id);
-        
-        if (productData.price) {
-            this.basketTotalPriceValue += productData.price * amount;
-			setElementProperty(this.basketTotalPriceElement, 'textContent', `${this.basketTotalPriceValue} синапсов`)
+    private setTotalPrice = () => {
+        let totalPrice = 0;
+        this.itemsInCache.forEach(item => {
+            totalPrice += item.amount * item.price
+        })
+
+        this.price = totalPrice;
+    }
+
+    private removeBasketItem = (id: string) => {
+        const basketItem = this.basketList.querySelector(`[data-item-id="${id}"]`)
+
+        if (basketItem) {
+            basketItem.remove();
+            this.itemsInCache.delete(id);
+            this._items.delete(id);
         }
     }
 
-    set items(items: ICardItem[]) {
-        this.itemsInBasket = items;
+    private getProductsData = async (): Promise<void> => {
+        const promises: Promise<void>[] = [];
+
+        this.items.forEach((amount, id) => {
+            if (!this.itemsInCache.has(id)) {
+                const promise = new Promise<void>((res) => {
+                    const handler = (data: ICard) => {
+                        if (data.id === id) {
+                            this.itemsInCache.set(id, { ...data, amount });
+                            this.events.off('product:getData:response', handler);
+                            res();
+                        }
+                    };
+
+                    this.events.on('product:getData:response', handler);
+                });
+
+                promises.push(promise);
+
+                this.events.emit('product:getData:request', { data: id });
+            } else {
+                const cachedItem = this.itemsInCache.get(id);
+
+                if (cachedItem) {
+                    cachedItem.amount = amount;
+                }
+            }
+        });
+
+        await Promise.all(promises);
+    }
+
+    private handleMakeOrderButtonState = () => {
+        if (this.items) {
+            if (this.items.size === 0) {
+                this.makeOrderButton.disabled = true;
+                return
+            }
+
+            this.makeOrderButton.disabled = false;
+        } else this.makeOrderButton.disabled = true;
+    }
+
+    public clearBasketContent = () => {
+        this.basketList.innerHTML = '';
+    }
+
+    public clearBasket = () => {
+        this.clearBasketContent();
+        this.itemsInCache.clear();
+        this.items.clear();
+    }
+
+    set items(value: Map<string, number>) {
+        this._items = value
+    }
+
+    get items() {
+        return this._items
+    }
+
+    set price(value: number) {
+        setElementProperty(this.basketTotalPriceElement, 'textContent', `${value ? value : '0'} Синапсов`)
+    }
+
+    get price() {
+        return Number(this.basketTotalPriceElement.textContent.split(' ')[0])
     }
 }

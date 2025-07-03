@@ -23,9 +23,10 @@ export class CardModal extends Modal<ICard> {
         this.modalPrice = container.querySelector('.card__price');
         this.addToBasketButton = container.querySelector('.card__button');
 
-        this.addToBasketButton.addEventListener('click', () => {
-			this.events.emit('product:addToBasket', {data: this.cardId });
-        });
+        this.addToBasketButton.addEventListener(
+            'click', 
+            () => this.events.emit('product:addToBasket', {data: this.cardId })
+        );
     }
 
     set title(value: string) {

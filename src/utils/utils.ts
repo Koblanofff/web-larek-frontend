@@ -139,7 +139,18 @@ export function setElementProperty<T extends HTMLElement, K extends keyof T>(ele
     element[property] = value;
 }
 
-export function isEmptyValidation(inputElement: HTMLInputElement): boolean {
-    if (inputElement.value) return false
-    return true;
+export const getValueOfInputByName = (listOfInputs: NodeListOf<HTMLInputElement>, name: string): string => {
+    return Array.from(listOfInputs).find(input => input.name === `${name}`).value
 }
+
+export const getCleanPhoneNumber = (phoneNumber: string) => {
+    return phoneNumber.replace(/\D/g, '');
+}
+
+export const validateEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+export const validatePhone = (phone: string): boolean => {
+    return getCleanPhoneNumber(phone).length === 11;
+};

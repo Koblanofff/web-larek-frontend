@@ -18,4 +18,4 @@ export class AppApi {
             .get<ICard>(`/product/${id}`)
             .then((res) => res)
     }
-}   
+}

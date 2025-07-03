@@ -1,56 +1,51 @@
-import { Modal } from "../common/Modal";
+import { FormModal } from '../common/FormModal';
 import { ICustomerData } from "../../types";
-import { IEvents } from "../base/events";
-import { isEmptyValidation } from "../../utils/utils";
-import { IOrderDetails } from "../../types";
+import { IEvents } from '../base/events';
+import { validateEmail, validatePhone, getValueOfInputByName, getCleanPhoneNumber } from '../../utils/utils';
 
-export class ContactsModal extends Modal<ICustomerData> {
-    protected events: IEvents;
-    protected emailInput: HTMLInputElement;
-    protected phoneNumberInput: HTMLInputElement;
-    protected submitButton: HTMLButtonElement;
+export class ContactsModal extends FormModal<ICustomerData> {
+    private contactsDetailsData: ICustomerData;
 
-    constructor(protected container: HTMLElement, events: IEvents) {
-        super(container, events)
-        this.events = events;
+    constructor(container: HTMLElement, events: IEvents) {
+        super(container, events);
 
-        this.emailInput = container.querySelector('input[name="email"]');
-        this.phoneNumberInput = container.querySelector('input[name="phone"]');
-        this.submitButton = container.querySelector('button[type="submit"]');
+        this.validators = {
+            email: {
+                validate: () => validateEmail(getValueOfInputByName(this.inputFormElements, 'email')),
+                errorMessage: 'Некоректный адресс'
+            },
+            phone: {
+                validate: () => validatePhone(getValueOfInputByName(this.inputFormElements, 'phone')),
+                errorMessage: 'Неккоректный номер телефона'
+            }
+        }
 
-        this.emailInput.addEventListener('input', () => this.validateForm());
-        this.phoneNumberInput.addEventListener('input', () => this.validateForm());
+        this.contactsDetailsData = {
+            email: '',
+            phone: ''
+        }
 
-        events.on('order:goToContacts', (data: { order: IOrderDetails, email: string, phone: string }) => {
-            this.setData({
-                order: data.order,
-                email: data.email,
-                phone: data.phone
-            });
-            this.validateForm();
-        });
+        this.onSubmitFunction = () => {
+            this.handleContactsDetains();
 
-        this.submitButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            const orderData: ICustomerData = {
-                order: this.getData().order,
-                email: this.emailInput.value,
-                phone: this.phoneNumberInput.value
-            };
-            this.events.emit('order:submit', orderData);
-        });
+            this.events.emit('order:add:contactsDetails', this.contactsDetailsData);
+            this.events.emit('order:finish');
+
+            this.resetData();
+        }
     }
 
-    private validateForm(): void {
-        const isEmailEmpty = isEmptyValidation(this.emailInput);
-        const isPhoneValid = this.validatePhoneNumber();
-        const emailInputValue = this.emailInput.value
-
-        this.submitButton.disabled = isEmailEmpty || !isPhoneValid || !emailInputValue.includes('@') || !emailInputValue.includes('.');
+    private handleContactsDetains = () => {
+        this.contactsDetailsData.email = getValueOfInputByName(this.inputFormElements, 'email');
+        
+        this.contactsDetailsData.phone = getCleanPhoneNumber(getValueOfInputByName(this.inputFormElements, 'phone'))
     }
 
-    private validatePhoneNumber(): boolean {
-        const phoneNumber = this.phoneNumberInput.value.replace(/\D/g, '');
-        return phoneNumber.length === 11;
+    protected resetData = () => {
+        super.resetData();
+        this.contactsDetailsData = {
+            email: '',
+            phone: ''
+        }
     }
 }
