@@ -39,7 +39,6 @@ export abstract class FormModal<T> extends Modal<T> {
 
         if (this.buttonFormElements.length !== 0) {
             this.handleButtonStates();
-            console.log(this.buttonFormElements)
         }    
     }
 
