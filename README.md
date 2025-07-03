@@ -252,6 +252,95 @@ npm run deploy
 - `order:add:contactsDetails` - событие, отвечающее за добавление контакной информации пользователя.
 - `order:finish` - событие, генерирумое после заполнения всех необходиммых данных заказа. 
 
+## Основные типы и интерфесы
+- Интерфейс карточки товара:
+```
+interface ICard {
+    id: string;
+    title: string;
+    description: string;
+    image: string;
+    category: string;
+    price: number;
+}
+
+```
+- Интерфейс данных всех товаров:
+```
+interface ICardsData {
+    cards: ICard[];
+    preview: string | null;
+}
+```
+
+- Интерфейс модели корзины:
+```
+interface IBasketModel {
+    items: Map<string, number>;
+    add(id: string): void;
+    remove(id: string): void;
+}
+```
+
+- Тип функции-валидатора поля ввода:
+```
+type Validator = (value: string) => boolean;
+```
+
+- Интерфейс `API`:
+```
+interface IApi {
+    baseUrl: string;
+    get<T>(uri: string): Promise<T>;
+    post<T>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
+}
+```
+
+- Интерфейс данных товаров, для отображения:
+```
+interface ICardsResponse {
+    total: number;
+    items: ICard[];
+}
+```
+
+- Интерфейс, расширяющий `ICard`, добавляя поле `amount`, отвечающее за количество определенного товара в корзине:
+```
+interface ICardItem extends ICard {
+    amount: number;
+}
+```
+
+- Тип, отвечающий за выбор способа оплаты:
+```
+type PaymentMethod = 'card' | 'cash' | undefined;
+```
+
+- Интерфейс дополнительных данных заказа:
+```
+interface IOrderDetails {
+    paymentMethod: PaymentMethod;
+    address: string;
+}
+```
+
+- Интерфейс контактных данных пользователя:
+```
+interface ICustomerData {
+    email: string;
+    phone: string;
+}
+```
+
+- Класс, содержащий всю информацию по заказу:
+```
+class Order {
+    items: Map<string, number>;
+    orderDetails: IOrderDetails;
+    customerData: ICustomerData;
+}
+```
+
 ## Ссылка на репозиторий
 https://github.com/Koblanofff/web-larek-frontend
 
