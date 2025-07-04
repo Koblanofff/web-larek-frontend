@@ -13,6 +13,7 @@ import { Basket } from './components/Basket';
 import { CardModal } from './components/modals/CardModal';
 import { OrderDetailsModal } from './components/modals/OrderDetailsModal';
 import { ContactsModal } from './components/modals/ContactsModal';
+import { SuccessModal } from './components/modals/SuccessModal';
 
 const events = new EventEmitter();
 
@@ -27,6 +28,7 @@ const cardModalTemplate: HTMLTemplateElement = document.querySelector('#card-pre
 const basketModalTemplate: HTMLTemplateElement = document.querySelector('#basket');
 const OrderDetailsModalTemplate: HTMLTemplateElement = document.querySelector('#order');
 const contactsModalTemplate: HTMLTemplateElement = document.querySelector('#contacts');
+const successModalTemplate: HTMLTemplateElement = document.querySelector('#success')
 
 const cardsContainer = new CardsContainer(document.querySelector('.gallery'));
 
@@ -34,6 +36,7 @@ const cardModal = new CardModal(cloneTemplate(cardModalTemplate), events);
 const basketModal = new BasketModal(cloneTemplate(basketModalTemplate), events);
 const orderDetailsModal = new OrderDetailsModal(cloneTemplate(OrderDetailsModalTemplate), events);
 const contactsModal = new ContactsModal(cloneTemplate(contactsModalTemplate), events);
+const successModal = new SuccessModal(cloneTemplate(successModalTemplate), events)
 
 const order = new Order(); 
 
@@ -92,6 +95,11 @@ events.on('contactsModal:opened', () => {
     contactsModal.open();
 })
 
+events.on('successModal:opened', () => {
+    successModal.totalPrice = basketModal.price;
+    successModal.open();
+})
+
 events.on('order:add:products', (data: Map<string, number>) => {
     order.items = new Map(data);
 })
@@ -106,7 +114,6 @@ events.on('order:add:contactsDetails', (data: ICustomerData) => {
 
 events.on('order:finish', () => {
     console.log(order)
-    orderDetailsModal.close();
     basket.clear();
     basketModal.clearBasket();
 })

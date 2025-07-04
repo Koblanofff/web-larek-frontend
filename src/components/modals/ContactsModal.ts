@@ -29,7 +29,7 @@ export class ContactsModal extends FormModal<ICustomerData> {
             this.handleContactsDetains();
 
             this.events.emit('order:add:contactsDetails', this.contactsDetailsData);
-            this.events.emit('order:finish');
+            this.events.emit('successModal:opened');
 
             this.resetData();
         }
